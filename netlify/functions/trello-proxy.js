@@ -1,7 +1,26 @@
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 exports.handler = async (event) => {
   try {
+    // CORS preflight
+    if (event.httpMethod === "OPTIONS") {
+      return {
+        statusCode: 204,
+        headers: corsHeaders,
+        body: ""
+      };
+    }
+
     if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: "Method Not Allowed" };
+      return {
+        statusCode: 405,
+        headers: corsHeaders,
+        body: "Method Not Allowed"
+      };
     }
 
     const body = JSON.parse(event.body || "{}");
@@ -12,7 +31,7 @@ exports.handler = async (event) => {
     const listId = process.env.TRELLO_LIST_ID;
 
     if (!key || !token || !listId) {
-      return { statusCode: 500, body: JSON.stringify({ ok: false, error: "Missing env vars" }) };
+      return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ ok: false, error: "Missing env vars" }) };
     }
 
     if (action === "create_card") {
@@ -38,11 +57,11 @@ exports.handler = async (event) => {
 
       const text = await resp.text();
       if (!resp.ok) {
-        return { statusCode: 500, body: JSON.stringify({ ok: false, http: resp.status, resp: text }) };
+        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ ok: false, http: resp.status, resp: text }) };
       }
 
       const json = JSON.parse(text);
-      return { statusCode: 200, body: JSON.stringify({ ok: true, cardId: json.id, cardUrl: json.url }) };
+      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ ok: true, cardId: json.id, cardUrl: json.url }) };
     }
 
     if (action === "attach_base64") {
@@ -51,7 +70,7 @@ exports.handler = async (event) => {
       const fileBase64 = body.fileBase64;
 
       if (!cardId || !fileBase64) {
-        return { statusCode: 400, body: JSON.stringify({ ok: false, error: "Missing cardId or fileBase64" }) };
+        return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ ok: false, error: "Missing cardId or fileBase64" }) };
       }
 
       const bin = Buffer.from(fileBase64, "base64");
@@ -69,15 +88,15 @@ exports.handler = async (event) => {
 
       const text = await resp.text();
       if (!resp.ok) {
-        return { statusCode: 500, body: JSON.stringify({ ok: false, http: resp.status, resp: text }) };
+        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ ok: false, http: resp.status, resp: text }) };
       }
 
-      return { statusCode: 200, body: JSON.stringify({ ok: true }) };
+      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ ok: true }) };
     }
 
-    return { statusCode: 400, body: JSON.stringify({ ok: false, error: "Unknown action" }) };
+    return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ ok: false, error: "Unknown action" }) };
   } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ ok: false, error: String(e) }) };
+    return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ ok: false, error: String(e) }) };
   }
 };
 

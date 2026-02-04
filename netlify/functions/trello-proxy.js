@@ -28,24 +28,34 @@ exports.handler = async (event) => {
 
     const key = process.env.TRELLO_KEY;
     const token = process.env.TRELLO_TOKEN;
-    const listId = process.env.TRELLO_LIST_ID;
-
-    if (!key || !token || !listId) {
-      return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ ok: false, error: "Missing env vars" }) };
+    const defaultListId = process.env.TRELLO_LIST_ID;
+    
+    if (!key || !token) {
+      return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ ok: false, error: "Missing env vars (TRELLO_KEY/TRELLO_TOKEN)" }) };
     }
+
 
     if (action === "create_card") {
       const name = body.name || "Bug report";
       const desc = body.desc || "";
       const labels = body.labels || "";
 
+      const idListToUse = body.listId || defaultListId;
+
+      console.log("create_card idListToUse =", idListToUse, "body.listId =", body.listId);
+
+      if (!idListToUse) {
+        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ ok: false, error: "Missing listId (provide body.listId or set TRELLO_LIST_ID)" }) };
+      }
+      
       const params = new URLSearchParams({
         key,
         token,
-        idList: listId,
+        idList: idListToUse,
         name,
         desc,
       });
+
 
       if (labels) params.set("idLabels", labels);
 
